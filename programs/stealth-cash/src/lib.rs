@@ -1,9 +1,8 @@
 use anchor_lang::prelude::{borsh::{BorshDeserialize, BorshSerialize}, *};
 
-pub mod merkle_tree;
-use merkle_tree::MerkleTree;
-
 declare_id!("5Ta8DofvfQ8FoJvwjApYe7jbXqqwT4UpXrBXBX3eTVxz");
+
+use svm_merkle_tree::{self, MerkleTree};
 
 type Commitment = Vec<u8>;
 
@@ -21,7 +20,7 @@ pub mod stealth_cash {
         let state = &mut ctx.accounts.state;
         state.verifier = _verifier;
         state.denomination = _denomination;
-        state.merkle_tree = 1; // to be changed
+        state.merkle_tree = MerkleTree::new(svm_merkle_tree::HashingAlgorithm::Sha256, 32);
         Ok(())
     }
 
@@ -88,11 +87,12 @@ pub struct WithdrawalEvent {
 /**
  * Contract State Account
  */
+
 #[account]
 pub struct State {
     pub verifier: Pubkey,
     pub denomination: u64,
-    pub merkle_tree: u32,
+    pub merkle_tree: MerkleTree,
     pub commitments: Vec<Commitment>,
     pub nullifier_hashes: Vec<Commitment>
 }
