@@ -1,4 +1,6 @@
-use anchor_lang::prelude::{borsh::{BorshDeserialize, BorshSerialize}, *};
+use std::collections::HashMap;
+
+use anchor_lang::prelude::{borsh::BorshSerialize, *};
 
 declare_id!("5Ta8DofvfQ8FoJvwjApYe7jbXqqwT4UpXrBXBX3eTVxz");
 
@@ -24,20 +26,83 @@ pub mod stealth_cash {
         Ok(())
     }
 
-    pub fn deposit(ctx: Context<Deposit>, _commitment: Commitment) -> Result<()> {
+    pub fn deposit(ctx: Context<Deposit>, _commitment: Commitment) -> Result<DepositEvent> {
         let state = &mut ctx.accounts.state;
 
-        if state.commitments.iter().any(|c| *c == _commitment) {
-            return Err(ErrorCode::InstructionMissing.into());
+        if state.commitments.get(&_commitment).is_some() {
+            let e = AnchorError {
+                error_msg: "Commitment is submitted".to_string(),
+                error_name: "CommitmentSubmittedException".to_string(),
+                error_code_number: 0,
+                error_origin: None,
+                compared_values: None
+            };
+            return Err(e.into());
         }
 
-        Ok(())
+        let leaf_index = state.merkle_tree.add_hash_unchecked(_commitment.clone()) as u32;
+        let timestamp: i64 = Clock::get().unwrap().unix_timestamp;
+        state.nullifier_hashes.insert(_commitment.clone(), true);
+
+        let deposit_event = DepositEvent {
+            commitment: _commitment,
+            leaf_index,
+            timestamp
+        };
+
+        process_deposit();
+
+        Ok(deposit_event)
     }
+
+    pub fn withdraw(
+        ctx: Context<Withdraw>,
+        _proof: Commitment,
+        _root: Commitment,
+        _nullifier_hash: Commitment,
+        _recipient: Pubkey,
+        _relayer: Option<Pubkey>,
+        _fee: f64
+    ) -> Result<WithdrawalEvent> {
+        let state = &mut ctx.accounts.state;
+
+        if _fee > state.denomination as f64 {
+            let e = AnchorError {
+                error_msg: "Fee exceeds denomination".to_string(),
+                error_name: "FeeExceedsDenominationException".to_string(),
+                error_code_number: 0,
+                error_origin: None,
+                compared_values: None
+            };
+            return Err(e.into());
+        }
+
+        if state.nullifier_hashes.get(&_nullifier_hash).is_some() {
+            let e = AnchorError {
+                error_msg: "The note has already been spent".to_string(),
+                error_name: "DuplicateNullifierHashException".to_string(),
+                error_code_number: 0,
+                error_origin: None,
+                compared_values: None
+            };
+            return Err(e.into());
+        }
+
+        // if state.merkle_tree.is_known_root()
+
+
+        todo!()
+    }
+
 }
 
-/*
-    Data Transfer Accounts 
-*/
+fn process_deposit() {
+    unimplemented!()
+}
+
+/**************
+    Data Transfer Accounts
+**************/
 
 #[derive(Accounts)]
 pub struct Initialize<'info> {
@@ -65,9 +130,10 @@ pub struct Withdraw<'info> {
     authority: AccountInfo<'info>
 }
 
-/*
+
+/**************
     Events
-*/
+**************/
 
 #[event]
 pub struct DepositEvent {
@@ -84,16 +150,17 @@ pub struct WithdrawalEvent {
     fee: u64
 }
 
-/**
- * Contract State Account
- */
+
+/**************
+    Contract State Account
+**************/
 
 #[account]
 pub struct State {
     pub verifier: Pubkey,
     pub denomination: u64,
     pub merkle_tree: MerkleTree,
-    pub commitments: Vec<Commitment>,
-    pub nullifier_hashes: Vec<Commitment>
+    pub commitments: HashMap<Commitment, bool>,
+    pub nullifier_hashes: HashMap<Commitment, bool>
 }
 
