@@ -17,4 +17,3 @@ default = []
 
 [dependencies]
 anchor-lang = "0.29.0"
-svm_merkle_tree = { path = "../../svm-merkle-tree" }

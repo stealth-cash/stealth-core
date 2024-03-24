@@ -4,12 +4,17 @@ use anchor_lang::prelude::{borsh::BorshSerialize, *};
 
 declare_id!("5Ta8DofvfQ8FoJvwjApYe7jbXqqwT4UpXrBXBX3eTVxz");
 
-use svm_merkle_tree::{self, MerkleTree};
+pub mod merkle_tree;
+pub mod utils;
+
+use merkle_tree::*;
+use utils::*;
 
 type Commitment = Vec<u8>;
 
 #[program]
 pub mod stealth_cash {
+
     use super::*;
 
     pub fn initialize(
@@ -22,11 +27,14 @@ pub mod stealth_cash {
         let state = &mut ctx.accounts.state;
         state.verifier = _verifier;
         state.denomination = _denomination;
-        state.merkle_tree = MerkleTree::new(svm_merkle_tree::HashingAlgorithm::Sha256, 32);
+        state.merkle_tree = MerkleTree::new(32);
         Ok(())
     }
 
-    pub fn deposit(ctx: Context<Deposit>, _commitment: Commitment) -> Result<DepositEvent> {
+    pub fn deposit(
+        ctx: Context<Deposit>,
+        _commitment: Commitment
+    ) -> Result<DepositEvent> {
         let state = &mut ctx.accounts.state;
 
         if state.commitments.get(&_commitment).is_some() {
@@ -40,7 +48,7 @@ pub mod stealth_cash {
             return Err(e.into());
         }
 
-        let leaf_index = state.merkle_tree.add_hash_unchecked(_commitment.clone()) as u32;
+        let leaf_index = state.merkle_tree.insert(_commitment.clone()).unwrap() as u32;
         let timestamp: i64 = Clock::get().unwrap().unix_timestamp;
         state.nullifier_hashes.insert(_commitment.clone(), true);
 
@@ -61,8 +69,9 @@ pub mod stealth_cash {
         _root: Commitment,
         _nullifier_hash: Commitment,
         _recipient: Pubkey,
-        _relayer: Option<Pubkey>,
-        _fee: f64
+        _relayer: Pubkey,
+        _fee: f64,
+        _refund: f64
     ) -> Result<WithdrawalEvent> {
         let state = &mut ctx.accounts.state;
 
@@ -88,15 +97,56 @@ pub mod stealth_cash {
             return Err(e.into());
         }
 
-        // if state.merkle_tree.is_known_root()
+        if !state.merkle_tree.is_known_root(_root.clone()) {
+            let e = AnchorError {
+                error_msg: "Could not find merkle root".to_string(),
+                error_name: "MerkleRootNotFoundExcepion".to_string(),
+                error_code_number: 0,
+                error_origin: None,
+                compared_values: None
+            };
+            return Err(e.into());
+        }
+    
+        let tuple: (u128, u128, u128, u128, f64, f64) = (
+            vec_to_u128(&_root), 
+            vec_to_u128(&_nullifier_hash), 
+            pubkey_to_u128(&_recipient), 
+            pubkey_to_u128(&_relayer),
+            _fee,
+            _refund
+        );
+        if !verify_proof(_proof, tuple) {
+            let e = AnchorError {
+                error_msg: "Invalid withdraw proof".to_string(),
+                error_name: "InvalidWithdrawProofException".to_string(),
+                error_code_number: 0,
+                error_origin: None,
+                compared_values: None
+            };
+            return Err(e.into());
+        }
 
+        state.nullifier_hashes.insert(_nullifier_hash.clone(), true);
+        process_withdraw(&_recipient, &_relayer, _fee, _refund);
 
-        todo!()
+        let withdrawal_event = WithdrawalEvent {
+            to: _recipient,
+            nullifier_hash: _nullifier_hash,
+            relayer: _relayer,
+            fee: _fee
+        };
+        
+        Ok(withdrawal_event)
     }
 
 }
 
 fn process_deposit() {
+    unimplemented!()
+}
+
+fn process_withdraw(recipient: &Pubkey, relayer: &Pubkey, fee: f64, refund: f64) {
     unimplemented!()
 }
 
@@ -146,8 +196,8 @@ pub struct DepositEvent {
 pub struct WithdrawalEvent {
     to: Pubkey,
     nullifier_hash: Commitment,
-    relayer: Option<Pubkey>,
-    fee: u64
+    relayer: Pubkey,
+    fee: f64
 }
 
 
