@@ -6,7 +6,9 @@ declare_id!("5Ta8DofvfQ8FoJvwjApYe7jbXqqwT4UpXrBXBX3eTVxz");
 
 pub mod merkle_tree;
 pub mod utils;
-pub mod verifier;
+// pub mod verifier;
+pub mod hasher;
+pub mod uint256;
 
 use merkle_tree::*;
 use utils::*;
