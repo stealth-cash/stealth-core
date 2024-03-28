@@ -6,6 +6,7 @@ declare_id!("5Ta8DofvfQ8FoJvwjApYe7jbXqqwT4UpXrBXBX3eTVxz");
 
 pub mod merkle_tree;
 pub mod utils;
+pub mod verifier;
 
 use merkle_tree::*;
 use utils::*;
@@ -165,8 +166,11 @@ pub struct Deposit<'info> {
     #[account(mut)]
     state: Account<'info, State>,
     
-    #[account(signer)]
-    authority: AccountInfo<'info>,
+    #[account(mut, signer)]
+    sender: AccountInfo<'info>,
+
+    #[account(mut)]
+    recipient: AccountInfo<'info>,
 
     system_program: AccountInfo<'info>
 }
