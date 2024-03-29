@@ -64,6 +64,10 @@ impl Uint256 {
         Self { v: U256::from(n) }
     }
 
+    pub fn from(s: &'static str) -> Self {
+        Self { v: U256::from(s) }
+    }
+
     pub fn from_bytes(&self, bytes: &[u8]) -> Self {
         assert!(bytes.len() <= 32, "big-endian");
         return Self { v: U256::from_big_endian(bytes) }

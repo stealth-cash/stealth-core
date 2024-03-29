@@ -133,7 +133,7 @@ fn MiMCSponge(in_xL: u128, in_xR: u128) -> (u128, u128) {
     (in_xL, in_xR)
 }
 
-pub fn verify_proof(proof: Vec<u8>, input: (u128, u128, u128, u128, f64, f64)) -> bool {
+pub fn verify_proof(_proof: Vec<u8>, _input: (u128, u128, u128, u128, f64, f64)) -> bool {
     true
 }
 

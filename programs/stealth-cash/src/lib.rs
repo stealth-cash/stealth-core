@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-
 use anchor_lang::prelude::{borsh::BorshSerialize, *};
 
 declare_id!("5Ta8DofvfQ8FoJvwjApYe7jbXqqwT4UpXrBXBX3eTVxz");
@@ -17,7 +16,6 @@ type Commitment = Vec<u8>;
 
 #[program]
 pub mod stealth_cash {
-
     use super::*;
 
     pub fn initialize(
@@ -149,7 +147,7 @@ fn process_deposit() {
     unimplemented!()
 }
 
-fn process_withdraw(recipient: &Pubkey, relayer: &Pubkey, fee: f64, refund: f64) {
+fn process_withdraw(_recipient: &Pubkey, _relayer: &Pubkey, _fee: f64, _refund: f64) {
     unimplemented!()
 }
 
@@ -186,7 +184,6 @@ pub struct Withdraw<'info> {
     authority: AccountInfo<'info>
 }
 
-
 /**************
     Events
 **************/
@@ -205,7 +202,6 @@ pub struct WithdrawalEvent {
     relayer: Pubkey,
     fee: f64
 }
-
 
 /**************
     Contract State Account
