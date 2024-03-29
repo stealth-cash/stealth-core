@@ -119,8 +119,6 @@ impl MerkleTree {
     pub fn get_last_root(&self) -> Vec<u8> {
         return self.roots.get(&self.current_root_index).unwrap().to_vec();
     }
-
-
 }
 
 fn convert_to_array(input: &[u8]) -> [u8; 16] {

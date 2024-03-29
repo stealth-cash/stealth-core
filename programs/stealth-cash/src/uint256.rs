@@ -1,17 +1,35 @@
 use std::str::FromStr;
-
+use anchor_lang::prelude::borsh::{BorshSerialize, BorshDeserialize};
 use primitive_types::U256;
 use hex;
-
 use crate::utils;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, Hash, PartialOrd)]
 pub struct Uint256 {
     pub v: U256
 }
 
 #[derive(Debug)]
 pub struct Uint256ParseError;
+
+impl BorshSerialize for Uint256 {
+    fn serialize<W: anchor_lang::prelude::borsh::maybestd::io::Write>(&self, writer: &mut W) -> anchor_lang::prelude::borsh::maybestd::io::Result<()> {
+        let mut bytes = [0; 32];
+        self.v.to_big_endian(&mut bytes);
+        writer.write_all(&bytes).unwrap();
+        Ok(())
+    }
+}
+
+impl BorshDeserialize for Uint256 {
+    fn deserialize_reader<R: anchor_lang::prelude::borsh::maybestd::io::Read>(reader: &mut R) -> anchor_lang::prelude::borsh::maybestd::io::Result<Self> {
+        let mut buf = [0; 32];
+        reader.read_exact(&mut buf)?;
+        Ok(Uint256 {
+            v: U256::from(&buf)
+        })
+    }
+}
 
 impl FromStr for Uint256 {
     type Err = Uint256ParseError;
@@ -33,11 +51,18 @@ impl ToString for Uint256 {
 
 impl PartialEq for Uint256 {
     fn eq(&self, other: &Self) -> bool {
-        return self.v == other.v;
+        self.v == other.v
+    }
+    
+    fn ne(&self, other: &Self) -> bool {
+        !self.eq(other)
     }
 }
 
 impl Uint256 {
+    pub fn new(n: u128) -> Self {
+        Self { v: U256::from(n) }
+    }
 
     pub fn from_bytes(&self, bytes: &[u8]) -> Self {
         assert!(bytes.len() <= 32, "big-endian");
