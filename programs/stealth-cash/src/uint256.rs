@@ -1,5 +1,5 @@
 use std::str::FromStr;
-use anchor_lang::prelude::borsh::{BorshSerialize, BorshDeserialize};
+use anchor_lang::prelude::*;
 use primitive_types::U256;
 use hex;
 use crate::utils;
@@ -9,10 +9,7 @@ pub struct Uint256 {
     pub v: U256
 }
 
-#[derive(Debug)]
-pub struct Uint256ParseError;
-
-impl BorshSerialize for Uint256 {
+impl AnchorSerialize for Uint256 {
     fn serialize<W: anchor_lang::prelude::borsh::maybestd::io::Write>(&self, writer: &mut W) -> anchor_lang::prelude::borsh::maybestd::io::Result<()> {
         let mut bytes = [0; 32];
         self.v.to_big_endian(&mut bytes);
@@ -21,7 +18,7 @@ impl BorshSerialize for Uint256 {
     }
 }
 
-impl BorshDeserialize for Uint256 {
+impl AnchorDeserialize for Uint256 {
     fn deserialize_reader<R: anchor_lang::prelude::borsh::maybestd::io::Read>(reader: &mut R) -> anchor_lang::prelude::borsh::maybestd::io::Result<Self> {
         let mut buf = [0; 32];
         reader.read_exact(&mut buf)?;
@@ -32,11 +29,17 @@ impl BorshDeserialize for Uint256 {
 }
 
 impl FromStr for Uint256 {
-    type Err = Uint256ParseError;
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
+    type Err = anchor_lang::error::Error;
+    fn from_str(s: &str) -> Result<Self> {
         match U256::from_str_radix(s, 16) {
             Ok(n) => return Ok(Self { v: n }),
-            Err(_) => return Err(Uint256ParseError)
+            Err(_) => return Err(AnchorError {
+                error_name: "Parse Error".to_string(),
+                error_code_number: 0,
+                error_msg: "Failed to parse".to_string(),
+                error_origin: None,
+                compared_values: None
+            }.into())
         }
     }
 }

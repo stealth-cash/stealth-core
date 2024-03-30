@@ -1,12 +1,12 @@
 use std::collections::HashMap;
-use anchor_lang::prelude::{borsh::{BorshDeserialize, BorshSerialize}, *};
+use anchor_lang::prelude::*;
 
 use crate::{hasher::Hasher, uint256::Uint256};
 use crate::utils;
 
 pub const ROOT_HISTORY_SIZE: u8 = 30;
 
-#[derive(Debug, Clone, BorshDeserialize, BorshSerialize)]
+#[derive(Debug, Clone, AnchorDeserialize, AnchorSerialize)]
 pub struct MerkleTree {
     levels: u8,
     filled_subtrees: HashMap<u8, Uint256>,
@@ -112,13 +112,6 @@ impl MerkleTree {
     pub fn get_last_root(&self) -> Uint256 {
         return self.roots.get(&self.current_root_index).unwrap().clone();
     }
-}
-
-fn convert_to_array(input: &[u8]) -> [u8; 16] {
-    let mut result = [0u8; 16];
-    let len = std::cmp::min(input.len(), 16);
-    result[..len].copy_from_slice(&input[..len]);
-    result
 }
 
 pub fn verify_proof(_proof: Uint256, _input: (Uint256, Uint256, u128, u128, f64, f64)) -> bool {

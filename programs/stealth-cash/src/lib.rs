@@ -1,5 +1,11 @@
+// TODO: CHANGE HASHMAPS TO ARRAYS
+// TODO: CHANGE HASHMAPS TO ARRAYS
+// TODO: CHANGE HASHMAPS TO ARRAYS
+// TODO: CHANGE HASHMAPS TO ARRAYS
+// TODO: CHANGE HASHMAPS TO ARRAYS
+
 use std::collections::HashMap;
-use anchor_lang::prelude::{borsh::BorshSerialize, *};
+use anchor_lang::prelude::*;
 
 declare_id!("5Ta8DofvfQ8FoJvwjApYe7jbXqqwT4UpXrBXBX3eTVxz");
 
@@ -13,29 +19,28 @@ use merkle_tree::*;
 use uint256::Uint256;
 use utils::*;
 
-type Commitment = Uint256;
-
 #[program]
 pub mod stealth_cash {
     use super::*;
 
     pub fn initialize(
         ctx: Context<Initialize>,
-        _verifier: Pubkey,
-        _hasher: Pubkey,
-        _denomination: u64,
-        _merkle_tree_height: u32
+        verifier: Pubkey,
+        denomination: u64,
+        merkle_tree_height: u8
     ) -> Result<()> {
         let state = &mut ctx.accounts.state;
-        state.verifier = _verifier;
-        state.denomination = _denomination;
-        state.merkle_tree = MerkleTree::new(32);
+        state.verifier = verifier;
+        state.denomination = denomination;
+        state.merkle_tree = MerkleTree::new(merkle_tree_height);
+        state.commitments = HashMap::new();
+        state.nullifier_hashes = HashMap::new();
         Ok(())
     }
 
     pub fn deposit(
         ctx: Context<Deposit>,
-        _commitment: Commitment
+        _commitment: Uint256
     ) -> Result<DepositEvent> {
         let state = &mut ctx.accounts.state;
 
@@ -67,9 +72,9 @@ pub mod stealth_cash {
 
     pub fn withdraw(
         ctx: Context<Withdraw>,
-        _proof: Commitment,
-        _root: Commitment,
-        _nullifier_hash: Commitment,
+        _proof: Uint256,
+        _root: Uint256,
+        _nullifier_hash: Uint256,
         _recipient: Pubkey,
         _relayer: Pubkey,
         _fee: f64,
@@ -194,7 +199,7 @@ pub struct Withdraw<'info> {
 
 #[event]
 pub struct DepositEvent {
-    commitment: Commitment,
+    commitment: Uint256,
     leaf_index: u32,
     timestamp: i64
 }
@@ -202,7 +207,7 @@ pub struct DepositEvent {
 #[event]
 pub struct WithdrawalEvent {
     to: Pubkey,
-    nullifier_hash: Commitment,
+    nullifier_hash: Uint256,
     relayer: Pubkey,
     fee: f64
 }
@@ -216,7 +221,6 @@ pub struct State {
     pub verifier: Pubkey,
     pub denomination: u64,
     pub merkle_tree: MerkleTree,
-    pub commitments: HashMap<Commitment, bool>,
-    pub nullifier_hashes: HashMap<Commitment, bool>
+    pub commitments: HashMap<Uint256, bool>,
+    pub nullifier_hashes: HashMap<Uint256, bool>
 }
-

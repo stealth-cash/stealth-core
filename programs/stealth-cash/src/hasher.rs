@@ -59,15 +59,15 @@ impl Hasher {
     }
 
     pub fn mimc_sponge(left: &Uint256, right: &Uint256, k: &Uint256) -> Uint256 {
-        let hasher = Hasher::default();
-        let mut last_r = Uint256::new(0);
-        let mut last_l = Uint256::new(0);
+        let mut last_r = left.clone();
+        let mut last_l = right.clone();
     
-        last_r = last_r.add_mod(&Uint256::new(0), &hasher.p);
-        let (new_last_r, new_last_l) = Hasher::mimc_feistel(&last_r, &last_l, &k);
-        
-        last_r = last_r.add_mod(&Uint256::new(1), &hasher.p);
-        let (new_last_r, new_last_l) = Hasher::mimc_feistel(&last_r, &last_l, &k);
+        for _ in 0..Hasher::default().n_rounds {
+            let (new_last_r, new_last_l) = Hasher::mimc_feistel(&last_r, &last_l, &k);
+    
+            last_r = new_last_r.add_mod(&Uint256::new(1), &Hasher::default().p);
+            last_l = new_last_l.clone();
+        }
     
         last_r
     }
