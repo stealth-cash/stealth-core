@@ -10,9 +10,10 @@ pub mod hasher;
 pub mod uint256;
 
 use merkle_tree::*;
+use uint256::Uint256;
 use utils::*;
 
-type Commitment = Vec<u8>;
+type Commitment = Uint256;
 
 #[program]
 pub mod stealth_cash {
@@ -109,9 +110,9 @@ pub mod stealth_cash {
             return Err(e.into());
         }
     
-        let tuple: (u128, u128, u128, u128, f64, f64) = (
-            vec_to_u128(&_root), 
-            vec_to_u128(&_nullifier_hash), 
+        let tuple: (Uint256, Uint256, u128, u128, f64, f64) = (
+            _root, 
+            _nullifier_hash, 
             pubkey_to_u128(&_recipient), 
             pubkey_to_u128(&_relayer),
             _fee,
@@ -166,13 +167,15 @@ pub struct Deposit<'info> {
     #[account(mut)]
     state: Account<'info, State>,
     
+    /// CHECK: This is not dangerous because we don't read or write from this account
     #[account(mut, signer)]
     sender: AccountInfo<'info>,
 
+    /// CHECK: This is not dangerous because we don't read or write from this account
     #[account(mut)]
     recipient: AccountInfo<'info>,
 
-    system_program: AccountInfo<'info>
+    system_program: SystemAccount<'info>
 }
 
 #[derive(Accounts)]
@@ -180,6 +183,7 @@ pub struct Withdraw<'info> {
     #[account(mut)]
     state: Account<'info, State>,
 
+    /// CHECK: This is not dangerous because we don't read or write from this account
     #[account(signer)]
     authority: AccountInfo<'info>
 }

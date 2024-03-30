@@ -1,7 +1,6 @@
-use primitive_types::U256;
 use crate::uint256::Uint256;
 
-struct Hasher {
+pub struct Hasher {
     p: Uint256,
     n_rounds: u8,
     c: Vec<Uint256>
@@ -39,14 +38,12 @@ impl Default for Hasher {
 }
 
 impl Hasher {
-    pub fn mimc_feistel(il: &Uint256, ir: &Uint256, _k: u128) -> (Uint256, Uint256) {
-        const NR_ROUNDS: u8 = 20;
+    fn mimc_feistel(il: &Uint256, ir: &Uint256, k: &Uint256) -> (Uint256, Uint256) {
         let hasher = Hasher::default();
-        let k = Uint256::new(_k);
         let mut last_l = il.clone();
         let mut last_r = ir.clone();
 
-        for i in 0..NR_ROUNDS {
+        for i in 0..hasher.n_rounds {
             let mask = last_r.add_mod(&k, &hasher.p);
             let mask = mask.add_mod(&hasher.c[i as usize], &hasher.p);
             let mask2 = mask.mul_mod(&mask, &hasher.p);
@@ -61,18 +58,17 @@ impl Hasher {
         (last_l, last_r)
     }
 
-    pub fn mimc_sponge(ins: [u128; 2], k: u128) -> Uint256 {
+    pub fn mimc_sponge(left: &Uint256, right: &Uint256, k: &Uint256) -> Uint256 {
         let hasher = Hasher::default();
         let mut last_r = Uint256::new(0);
-        let mut last_c = Uint256::new(0);
+        let mut last_l = Uint256::new(0);
     
-        for &i in ins.iter() {
-            last_r = last_r.add_mod(&Uint256::new(i), &hasher.p);
-            let (new_last_r, new_last_c) = Hasher::mimc_feistel(&last_r, &last_c, k);
-            last_r = new_last_r;
-            last_c = new_last_c;
-        }
+        last_r = last_r.add_mod(&Uint256::new(0), &hasher.p);
+        let (new_last_r, new_last_l) = Hasher::mimc_feistel(&last_r, &last_l, &k);
+        
+        last_r = last_r.add_mod(&Uint256::new(1), &hasher.p);
+        let (new_last_r, new_last_l) = Hasher::mimc_feistel(&last_r, &last_l, &k);
     
         last_r
-    }    
+    }
 }

@@ -4,7 +4,7 @@ use primitive_types::U256;
 use hex;
 use crate::utils;
 
-#[derive(Debug, Clone, Eq, Hash, PartialOrd)]
+#[derive(Debug, Clone, Copy, Eq, Hash, PartialOrd)]
 pub struct Uint256 {
     pub v: U256
 }
@@ -207,5 +207,8 @@ impl Uint256 {
     pub fn div_mod(&self, b: &Uint256, p: &Uint256) -> Uint256 {
         return self.mul_mod(&b.exp_mod(&Self{ v: p.v - 2 }, p), p);
     }
-}
 
+    pub fn is_zero(&self) -> bool {
+        self.v.is_zero()
+    }
+}
