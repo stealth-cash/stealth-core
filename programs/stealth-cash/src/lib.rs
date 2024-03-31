@@ -1,9 +1,3 @@
-// TODO: CHANGE HASHMAPS TO ARRAYS
-// TODO: CHANGE HASHMAPS TO ARRAYS
-// TODO: CHANGE HASHMAPS TO ARRAYS
-// TODO: CHANGE HASHMAPS TO ARRAYS
-// TODO: CHANGE HASHMAPS TO ARRAYS
-
 use std::collections::HashMap;
 use anchor_lang::prelude::*;
 
@@ -32,35 +26,31 @@ pub mod stealth_cash {
         let state = &mut ctx.accounts.state;
         state.verifier = verifier;
         state.denomination = denomination;
-        state.merkle_tree = MerkleTree::new(merkle_tree_height);
-        state.commitments = HashMap::new();
-        state.nullifier_hashes = HashMap::new();
+        state.merkle_tree = MerkleTree::new(merkle_tree_height).to_string();
+        state.commitments = String::new();
+        state.nullifier_hashes = String::new();
         Ok(())
     }
 
     pub fn deposit(
         ctx: Context<Deposit>,
-        _commitment: Uint256
+        _commitment: String // Uin256
     ) -> Result<DepositEvent> {
-        let state = &mut ctx.accounts.state;
+        let serialized_state = &ctx.accounts.state;
+        let mut state = serialized_state.deserialize();
 
-        if state.commitments.get(&_commitment).is_some() {
-            let e = AnchorError {
-                error_msg: "Commitment is submitted".to_string(),
-                error_name: "CommitmentSubmittedException".to_string(),
-                error_code_number: 0,
-                error_origin: None,
-                compared_values: None
-            };
-            return Err(e.into());
+        let commitment = Uint256::from_string(&_commitment);
+
+        if state.commitments.get(&commitment).is_some() {
+            return Err(err("Commitment is submitted").into());
         }
 
-        let leaf_index = state.merkle_tree.insert(_commitment.clone()).unwrap() as u32;
+        let leaf_index = state.merkle_tree.insert(commitment.clone()).unwrap() as u32;
         let timestamp: i64 = Clock::get().unwrap().unix_timestamp;
-        state.nullifier_hashes.insert(_commitment.clone(), true);
+        state.nullifier_hashes.insert(commitment.clone(), true);
 
         let deposit_event = DepositEvent {
-            commitment: _commitment,
+            commitment: commitment.to_string(), // TODO
             leaf_index,
             timestamp
         };
@@ -72,74 +62,51 @@ pub mod stealth_cash {
 
     pub fn withdraw(
         ctx: Context<Withdraw>,
-        _proof: Uint256,
-        _root: Uint256,
-        _nullifier_hash: Uint256,
+        _proof: String, // Uint256
+        _root: String, // Uint256
+        _nullifier_hash: String, // Uint256
         _recipient: Pubkey,
         _relayer: Pubkey,
         _fee: f64,
         _refund: f64
     ) -> Result<WithdrawalEvent> {
-        let state = &mut ctx.accounts.state;
+        let serialized_state = &mut ctx.accounts.state;
+        let mut state = serialized_state.deserialize();
+
+        let proof = Uint256::from_string(&_proof);
+        let nullifier_hash = Uint256::from_string(&_nullifier_hash);
+        let root = Uint256::from_string(&_root);
 
         if _fee > state.denomination as f64 {
-            let e = AnchorError {
-                error_msg: "Fee exceeds denomination".to_string(),
-                error_name: "FeeExceedsDenominationException".to_string(),
-                error_code_number: 0,
-                error_origin: None,
-                compared_values: None
-            };
-            return Err(e.into());
+            return Err(err("Fee exceeds denomination").into());
         }
 
-        if state.nullifier_hashes.get(&_nullifier_hash).is_some() {
-            let e = AnchorError {
-                error_msg: "The note has already been spent".to_string(),
-                error_name: "DuplicateNullifierHashException".to_string(),
-                error_code_number: 0,
-                error_origin: None,
-                compared_values: None
-            };
-            return Err(e.into());
+        if state.nullifier_hashes.get(&nullifier_hash).is_some() {
+            return Err(err("The note has already been spent").into());
         }
 
-        if !state.merkle_tree.is_known_root(_root.clone()) {
-            let e = AnchorError {
-                error_msg: "Could not find merkle root".to_string(),
-                error_name: "MerkleRootNotFoundExcepion".to_string(),
-                error_code_number: 0,
-                error_origin: None,
-                compared_values: None
-            };
-            return Err(e.into());
+        if !state.merkle_tree.is_known_root(root.clone()) {
+            return Err(err("Could not find merkle root").into());
         }
     
         let tuple: (Uint256, Uint256, u128, u128, f64, f64) = (
-            _root, 
-            _nullifier_hash, 
+            root, 
+            nullifier_hash, 
             pubkey_to_u128(&_recipient), 
             pubkey_to_u128(&_relayer),
             _fee,
             _refund
         );
-        if !verify_proof(_proof, tuple) {
-            let e = AnchorError {
-                error_msg: "Invalid withdraw proof".to_string(),
-                error_name: "InvalidWithdrawProofException".to_string(),
-                error_code_number: 0,
-                error_origin: None,
-                compared_values: None
-            };
-            return Err(e.into());
+        if !verify_proof(proof, tuple) {
+            return Err(err("Invalid withdraw proof").into());
         }
 
-        state.nullifier_hashes.insert(_nullifier_hash.clone(), true);
+        state.nullifier_hashes.insert(nullifier_hash.clone(), true);
         process_withdraw(&_recipient, &_relayer, _fee, _refund);
 
         let withdrawal_event = WithdrawalEvent {
             to: _recipient,
-            nullifier_hash: _nullifier_hash,
+            nullifier_hash: _nullifier_hash.to_string(), // TODO
             relayer: _relayer,
             fee: _fee
         };
@@ -199,7 +166,7 @@ pub struct Withdraw<'info> {
 
 #[event]
 pub struct DepositEvent {
-    commitment: Uint256,
+    commitment: String,
     leaf_index: u32,
     timestamp: i64
 }
@@ -207,7 +174,7 @@ pub struct DepositEvent {
 #[event]
 pub struct WithdrawalEvent {
     to: Pubkey,
-    nullifier_hash: Uint256,
+    nullifier_hash: String, //Uint256,
     relayer: Pubkey,
     fee: f64
 }
@@ -220,7 +187,38 @@ pub struct WithdrawalEvent {
 pub struct State {
     pub verifier: Pubkey,
     pub denomination: u64,
+    pub merkle_tree: String, //MerkleTree,
+    pub commitments: String, //HashMap<Uint256, bool>,
+    pub nullifier_hashes: String //HashMap<Uint256, bool>
+}
+
+pub struct DeserializedState {
+    pub verifier: Pubkey,
+    pub denomination: u64,
     pub merkle_tree: MerkleTree,
     pub commitments: HashMap<Uint256, bool>,
     pub nullifier_hashes: HashMap<Uint256, bool>
+}
+
+impl State {
+    pub fn deserialize(&self) -> DeserializedState {
+        DeserializedState {
+            verifier: self.verifier,
+            denomination: self.denomination,
+            merkle_tree: self.merkle_tree.parse().unwrap(),
+            commitments: DeserializedState::deserialize_map(&self.commitments),
+            nullifier_hashes: DeserializedState::deserialize_map(&self.nullifier_hashes),
+        }
+    }
+}
+
+impl DeserializedState {
+    fn deserialize_map(serialized_map: &str) -> HashMap<Uint256, bool> {
+        let bytes = serialized_map.as_bytes();
+        if let Ok(map) = HashMap::try_from_slice(&bytes) {
+            map
+        } else {
+            HashMap::new()
+        }
+    }
 }

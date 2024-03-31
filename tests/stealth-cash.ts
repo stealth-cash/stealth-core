@@ -11,7 +11,7 @@ describe("stealth-cash", () => {
     const tx = await program.methods.initialize(
       anchor.web3.Keypair.generate().publicKey,
       new anchor.BN(100),
-      32    
+      32
     )
     .accounts({ state: anchor.web3.Keypair.generate().publicKey })
     .rpc();

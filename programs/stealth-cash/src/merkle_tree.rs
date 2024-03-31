@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::str::FromStr;
 use anchor_lang::prelude::*;
 
 use crate::{hasher::Hasher, uint256::Uint256};
@@ -6,13 +7,138 @@ use crate::utils;
 
 pub const ROOT_HISTORY_SIZE: u8 = 30;
 
-#[derive(Debug, Clone, AnchorDeserialize, AnchorSerialize)]
+#[derive(Debug, Clone)]
 pub struct MerkleTree {
     levels: u8,
     filled_subtrees: HashMap<u8, Uint256>,
     roots: HashMap<u8, Uint256>,
     current_root_index: u8,
     next_index: u8
+}
+
+impl ToString for MerkleTree {
+    fn to_string(&self) -> String {
+        let mut string_representation = String::new();
+        
+        string_representation.push_str(&format!("levels: {}\n", self.levels));
+        
+        string_representation.push_str("filled_subtrees:\n");
+        for (level, value) in &self.filled_subtrees {
+            string_representation.push_str(&format!("  {}: {}\n", level, value.to_string()));
+        }
+        
+        string_representation.push_str("roots:\n");
+        for (level, value) in &self.roots {
+            string_representation.push_str(&format!("  {}: {}\n", level, value.to_string()));
+        }
+        
+        string_representation.push_str(&format!("current_root_index: {}\n", self.current_root_index));
+        string_representation.push_str(&format!("next_index: {}\n", self.next_index));
+        
+        string_representation
+    }
+}
+
+impl FromStr for MerkleTree {
+    type Err = AnchorError;
+
+    fn from_str(s: &str) -> std::result::Result<Self, AnchorError> {
+        let mut levels: Option<u8> = None;
+        let mut filled_subtrees: HashMap<u8, Uint256> = HashMap::new();
+        let mut roots: HashMap<u8, Uint256> = HashMap::new();
+        let mut current_root_index: Option<u8> = None;
+        let mut next_index: Option<u8> = None;
+
+        for line in s.lines() {
+            let parts: Vec<&str> = line.trim().splitn(2, ":").collect();
+            if parts.len() != 2 {
+                return Err(
+                    AnchorError {
+                        error_msg: "e".to_string(),
+                        error_name: "e".to_string(),
+                        error_code_number: 5,
+                        error_origin: None,
+                        compared_values: None
+                    }.into()
+                );
+            }
+            let key = parts[0].trim();
+            let value = parts[1].trim();
+
+            match key {
+                "levels" => {
+                    levels = Some(value.parse().map_err(|e| format!("Parsing levels failed: {}", e)).unwrap());
+                }
+                "filled_subtrees" => {
+                    // Parse filled_subtrees
+                    // Assuming format: "level: value"
+                    let level_value: Vec<&str> = value.splitn(2, ":").collect();
+                    if level_value.len() != 2 {
+                        return Err(
+                            AnchorError {
+                                error_msg: "e".to_string(),
+                                error_name: "e".to_string(),
+                                error_code_number: 5,
+                                error_origin: None,
+                                compared_values: None
+                            }.into()        
+                        );
+                    }
+                    let level: u8 = level_value[0].trim().parse().map_err(|e| format!("Parsing filled_subtrees level failed: {}", e)).unwrap();
+                    let value: Uint256 = level_value[1].trim().parse().map_err(|e| format!("Parsing filled_subtrees value failed: {}", e)).unwrap();
+                    filled_subtrees.insert(level, value);
+                }
+                "roots" => {
+                    // Parse roots
+                    // Assuming format: "level: value"
+                    let level_value: Vec<&str> = value.splitn(2, ":").collect();
+                    if level_value.len() != 2 {
+                        return Err(
+                            AnchorError {
+                                error_msg: "e".to_string(),
+                                error_name: "e".to_string(),
+                                error_code_number: 5,
+                                error_origin: None,
+                                compared_values: None
+                            }.into()        
+                        );
+                    }
+                    let level: u8 = level_value[0].trim().parse().map_err(|e| format!("Parsing roots level failed: {}", e)).unwrap();
+                    let value: Uint256 = level_value[1].trim().parse().map_err(|e| format!("Parsing roots value failed: {}", e)).unwrap();
+                    roots.insert(level, value);
+                }
+                "current_root_index" => {
+                    current_root_index = Some(value.parse().map_err(|e| format!("Parsing current_root_index failed: {}", e)).unwrap());
+                }
+                "next_index" => {
+                    next_index = Some(value.parse().map_err(|e| format!("Parsing next_index failed: {}", e)).unwrap());
+                }
+                _ => {
+                    return Err(
+                        AnchorError {
+                            error_msg: "e".to_string(),
+                            error_name: "e".to_string(),
+                            error_code_number: 5,
+                            error_origin: None,
+                            compared_values: None
+                        }.into()    
+                    );
+                }
+            }
+        }
+
+        let levels = levels.ok_or("Missing levels").unwrap();
+        let current_root_index = current_root_index.ok_or("Missing current_root_index").unwrap();
+        let next_index = next_index.ok_or("Missing next_index").unwrap();
+
+        Ok(MerkleTree {
+            levels,
+            filled_subtrees,
+            roots,
+            current_root_index,
+            next_index,
+        })
+    }
 }
 
 impl MerkleTree {
