@@ -10,4 +10,4 @@ test-ledger
 *.png
 *.jpeg
 
-w1.json
+wallets/

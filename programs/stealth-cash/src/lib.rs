@@ -19,12 +19,12 @@ pub mod stealth_cash {
 
     pub fn initialize(
         ctx: Context<Initialize>,
-        verifier: Pubkey,
+        // verifier: Pubkey,
         denomination: u64,
         merkle_tree_height: u8
     ) -> Result<()> {
         let state = &mut ctx.accounts.state;
-        state.verifier = verifier;
+        // state.verifier = verifier;
         state.denomination = denomination;
         state.merkle_tree = MerkleTree::new(merkle_tree_height).to_string();
         state.commitments = String::new();

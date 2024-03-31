@@ -8,11 +8,11 @@ skip-lint = false
 stealth_cash = "5Ta8DofvfQ8FoJvwjApYe7jbXqqwT4UpXrBXBX3eTVxz"
 
 [registry]
-url = "https://api.apr.dev"
+url = "https://api.devnet.solana.com"
 
 [provider]
 cluster = "Localnet"
-wallet = "/home/ilia/Desktop/stealth-cash/w1.json"
+wallet = "/home/ilia/Desktop/stealth-cash/wallets/w1.json"
 
 [scripts]
 test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
