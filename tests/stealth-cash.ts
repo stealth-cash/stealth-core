@@ -11,7 +11,7 @@ describe("stealth-cash", async () => {
     const { connection } = anchor.getProvider();
     const program = anchor.workspace.StealthCash as Program<StealthCash>;
     const developerKeypair = loadKeypair("wallets/w1.json");
-    const stateAccountKeypair = await generateStateAccount(connection, "wallets/state.json");
+    const stateAccountKeypair = await generateStateAccount(connection, "wallets/state.json", developerKeypair);
     
     it("Testing keypairs", () => {
         assert(!!developerKeypair, "Developer keypair is missing");
@@ -25,12 +25,12 @@ describe("stealth-cash", async () => {
     });
 
     it("Is initialized!", async () => {
-        const tx = await program.methods
+        const ix = await program.methods
             .initialize(new anchor.BN(100), 32)
             .accounts({ state: stateAccountKeypair.publicKey })
             .instruction();
-
-        console.log("Your transaction signature", tx);
-        assert(!!tx, "State does not exist");
+        
+        await anchor.web3.sendAndConfirmTransaction(connection, new anchor.web3.Transaction().add(ix), [developerKeypair]);
+        assert(true);
     });
 });

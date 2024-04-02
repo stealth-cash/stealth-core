@@ -16,25 +16,36 @@ export const loadKeypair = (walletPath: string): web3.Keypair => {
     }
 }
 
-export const generateStateAccount = async (connection: web3.Connection, stateFilePath: string): Promise<web3.Keypair> => {
+export const generateStateAccount = async (
+    connection: web3.Connection,
+    stateFilePath: string,
+    developerKeypair: web3.Keypair // developer keypair
+): Promise<web3.Keypair> => {
     if(fs.existsSync(stateFilePath)) {
         return loadKeypair(stateFilePath);
     }
 
     const keypair = web3.Keypair.generate();
-    const buffer = Array.from(keypair.secretKey);
-    fs.writeFileSync("wallets/state.json", JSON.stringify(buffer), { encoding: "utf-8" });
-    const transaction = new web3.Transaction().add(
+
+    const tx = new web3.Transaction().add(
+        // Create an account
         web3.SystemProgram.createAccount({
-            fromPubkey: keypair.publicKey,
+            fromPubkey: developerKeypair.publicKey,
             newAccountPubkey: keypair.publicKey,
-            lamports: await connection.getMinimumBalanceForRentExemption(1024),
+            lamports: solToLamports(0.5),
             space: 1024,
-            programId: new web3.PublicKey('5Ta8DofvfQ8FoJvwjApYe7jbXqqwT4UpXrBXBX3eTVxz')
+            programId: new web3.PublicKey("5Ta8DofvfQ8FoJvwjApYe7jbXqqwT4UpXrBXBX3eTVxz")
         })
     );
 
-    await web3.sendAndConfirmTransaction(connection, transaction, [keypair]);
-    await connection.requestAirdrop(keypair.publicKey, solToLamports(1));
+    try {
+        const sig = await web3.sendAndConfirmTransaction(connection, tx, [developerKeypair, keypair]);
+        const buffer = Array.from(keypair.secretKey);
+        fs.writeFileSync("wallets/state.json", JSON.stringify(buffer), { encoding: "utf-8" });  
+        console.log("Created state account and transferred 0.5 SOL", sig);
+    } catch (error) {
+        console.error("Could not confirm tx", error);
+    }
+
     return keypair;
 }
