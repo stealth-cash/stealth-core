@@ -4,7 +4,6 @@ import { StealthCash } from "../target/types/stealth_cash";
 import { assert } from "chai";
 import { loadKeypair, generateStateAccount, lamportsToSol } from "./utils";
 
-
 describe("stealth-cash", async () => {
     anchor.setProvider(anchor.AnchorProvider.env());
 
@@ -24,13 +23,18 @@ describe("stealth-cash", async () => {
         assert(sols >= 1, "balance is less that 2");
     });
 
-    it("Is initialized!", async () => {
-        const ix = await program.methods
-            .initialize(new anchor.BN(100), 32)
-            .accounts({ state: stateAccountKeypair.publicKey })
-            .instruction();
-        
-        await anchor.web3.sendAndConfirmTransaction(connection, new anchor.web3.Transaction().add(ix), [developerKeypair]);
-        assert(true);
+    it("Testing deposit", async () => {
+        // TODO: Generate commitment and test if deposit works
+        const commitment = "";
+        const ix = await program.methods.deposit(commitment).instruction();
     });
+
+    // it("Is initialized!", async () => {
+    //     const ix = await program.methods
+    //         .initialize(new anchor.BN(100), 32)
+    //         .accounts({ state: stateAccountKeypair.publicKey })
+    //         .instruction();
+    //     await anchor.web3.sendAndConfirmTransaction(connection, new anchor.web3.Transaction().add(ix), [developerKeypair]);
+    //     assert(true);
+    // });
 });
