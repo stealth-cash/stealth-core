@@ -19,3 +19,4 @@ default = []
 anchor-lang = "0.29.0"
 primitive-types = "0.12.1"
 hex = "0.4.3"
+stealth-lib = "0.1.0"

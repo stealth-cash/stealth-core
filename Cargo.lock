@@ -1633,6 +1633,18 @@ dependencies = [
  "anchor-lang",
  "hex",
  "primitive-types",
+ "stealth-lib",
+]
+
+[[package]]
+name = "stealth-lib"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2469bf2541215c75b3192f5839561caa6a52063d49a9eda97a0d62b1624f4cf6"
+dependencies = [
+ "anchor-lang",
+ "hex",
+ "primitive-types",
 ]
 
 [[package]]

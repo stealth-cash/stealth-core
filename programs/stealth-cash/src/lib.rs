@@ -3,15 +3,7 @@ use anchor_lang::prelude::*;
 
 declare_id!("5Ta8DofvfQ8FoJvwjApYe7jbXqqwT4UpXrBXBX3eTVxz");
 
-pub mod merkle_tree;
-pub mod utils;
-// pub mod verifier;
-pub mod hasher;
-pub mod uint256;
-
-use merkle_tree::*;
-use uint256::Uint256;
-use utils::*;
+use stealth_lib::{merkle_tree::MerkleTree, uint256::Uint256, utils::*};
 
 #[program]
 pub mod stealth_cash {
