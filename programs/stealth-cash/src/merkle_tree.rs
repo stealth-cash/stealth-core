@@ -52,14 +52,7 @@ impl FromStr for MerkleTree {
         for line in s.lines() {
             let parts: Vec<&str> = line.trim().splitn(2, ":").collect();
             if parts.len() != 2 {
-                return Err(
-                    AnchorError {
-                        error_msg: "e".to_string(),
-                        error_name: "e".to_string(),
-                        error_code_number: 5,
-                        error_origin: None,
-                        compared_values: None
-                    }.into()
+                return Err(utils::err("Error").into()
                 );
             }
             let key = parts[0].trim();
@@ -70,38 +63,18 @@ impl FromStr for MerkleTree {
                     levels = Some(value.parse().map_err(|e| format!("Parsing levels failed: {}", e)).unwrap());
                 }
                 "filled_subtrees" => {
-                    // Parse filled_subtrees
-                    // Assuming format: "level: value"
                     let level_value: Vec<&str> = value.splitn(2, ":").collect();
                     if level_value.len() != 2 {
-                        return Err(
-                            AnchorError {
-                                error_msg: "e".to_string(),
-                                error_name: "e".to_string(),
-                                error_code_number: 5,
-                                error_origin: None,
-                                compared_values: None
-                            }.into()        
-                        );
+                        return Err(utils::err("Error occured in filled subtrees").into());
                     }
                     let level: u8 = level_value[0].trim().parse().map_err(|e| format!("Parsing filled_subtrees level failed: {}", e)).unwrap();
                     let value: Uint256 = level_value[1].trim().parse().map_err(|e| format!("Parsing filled_subtrees value failed: {}", e)).unwrap();
                     filled_subtrees.insert(level, value);
                 }
                 "roots" => {
-                    // Parse roots
-                    // Assuming format: "level: value"
                     let level_value: Vec<&str> = value.splitn(2, ":").collect();
                     if level_value.len() != 2 {
-                        return Err(
-                            AnchorError {
-                                error_msg: "e".to_string(),
-                                error_name: "e".to_string(),
-                                error_code_number: 5,
-                                error_origin: None,
-                                compared_values: None
-                            }.into()        
-                        );
+                        return Err(utils::err("Error in roots").into());
                     }
                     let level: u8 = level_value[0].trim().parse().map_err(|e| format!("Parsing roots level failed: {}", e)).unwrap();
                     let value: Uint256 = level_value[1].trim().parse().map_err(|e| format!("Parsing roots value failed: {}", e)).unwrap();
@@ -114,15 +87,7 @@ impl FromStr for MerkleTree {
                     next_index = Some(value.parse().map_err(|e| format!("Parsing next_index failed: {}", e)).unwrap());
                 }
                 _ => {
-                    return Err(
-                        AnchorError {
-                            error_msg: "e".to_string(),
-                            error_name: "e".to_string(),
-                            error_code_number: 5,
-                            error_origin: None,
-                            compared_values: None
-                        }.into()    
-                    );
+                    return Err(utils::err("Unexpecte error").into());
                 }
             }
         }
@@ -136,7 +101,7 @@ impl FromStr for MerkleTree {
             filled_subtrees,
             roots,
             current_root_index,
-            next_index,
+            next_index
         })
     }
 }
@@ -174,14 +139,7 @@ impl MerkleTree {
 
     pub fn insert(&mut self, leaf: Uint256) -> Result<u8> {
         if self.next_index < 2_u8.pow(self.levels as u32) {
-            let e = AnchorError {
-                error_msg: "Merkle tree is full, no more leaves can be added".to_string(),
-                error_name: "MerkleTreeOverflowException".to_string(),
-                error_code_number: 0,
-                error_origin: None,
-                compared_values: None
-            };
-            return Err(e.into());
+            return Err(utils::err("Merkle tree is full, no more leaves can be added").into());
         }
 
         let _next_index = self.next_index;
@@ -238,10 +196,6 @@ impl MerkleTree {
     pub fn get_last_root(&self) -> Uint256 {
         return self.roots.get(&self.current_root_index).unwrap().clone();
     }
-}
-
-pub fn verify_proof(_proof: Uint256, _input: (Uint256, Uint256, u128, u128, f64, f64)) -> bool {
-    true
 }
 
 pub fn zeros(i: u8) -> Uint256 {

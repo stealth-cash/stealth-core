@@ -222,3 +222,7 @@ impl DeserializedState {
         }
     }
 }
+
+fn verify_proof(_proof: Uint256, _input: (Uint256, Uint256, u128, u128, f64, f64)) -> bool {
+    true
+}
