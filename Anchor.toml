@@ -4,21 +4,15 @@
 seeds = false
 skip-lint = false
 
-[programs.localnet]
-stealth_cash = "5Ta8DofvfQ8FoJvwjApYe7jbXqqwT4UpXrBXBX3eTVxz"
+[programs.devnet]
+stealth_cash = "GZFcqq4j4ptgHMVnFk8t4hDxCRS5Rrt1aNCBNj4hX3Lt"
 
 [registry]
 url = "https://api.devnet.solana.com"
-# url = "http://localhost:8899"
 
 [provider]
 cluster = "Devnet"
-# cluster = "Localnet"
 wallet = "/home/ilia/Desktop/stealth-cash/wallets/w1.json"
 
 [scripts]
 test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
-
-        # "circomlib": "git+https://github.com/stealth-cash/circomlib.git#3b492f9801573eebcfe1b6c584afe8a3beecf2b4",
-        # "fixed-merkle-tree": "^0.7.3",
-        # "snarkjs": "git+https://github.com/stealth-cash/snarkjs.git#869181cfaf7526fe8972073d31655493a04326d5",

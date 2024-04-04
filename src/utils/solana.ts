@@ -1,6 +1,8 @@
 import fs from "fs";
 import { web3 } from "@coral-xyz/anchor";
 
+export type Net = "devnet" | "testnet" | "mainnet";
+
 export const lamportsToSol = (lamports: number) => lamports / web3.LAMPORTS_PER_SOL;
 export const solToLamports = (sols: number) => web3.LAMPORTS_PER_SOL * sols;
 
@@ -34,7 +36,7 @@ export const generateStateAccount = async (
             newAccountPubkey: keypair.publicKey,
             lamports: solToLamports(0.5),
             space: 1024,
-            programId: new web3.PublicKey("5Ta8DofvfQ8FoJvwjApYe7jbXqqwT4UpXrBXBX3eTVxz")
+            programId: new web3.PublicKey("GZFcqq4j4ptgHMVnFk8t4hDxCRS5Rrt1aNCBNj4hX3Lt")
         })
     );
 

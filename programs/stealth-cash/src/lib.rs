@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use anchor_lang::prelude::*;
 
-declare_id!("5Ta8DofvfQ8FoJvwjApYe7jbXqqwT4UpXrBXBX3eTVxz");
+declare_id!("GZFcqq4j4ptgHMVnFk8t4hDxCRS5Rrt1aNCBNj4hX3Lt");
 
 use stealth_lib::{merkle_tree::MerkleTree, uint256::Uint256, utils::*};
 
@@ -11,12 +11,10 @@ pub mod stealth_cash {
 
     pub fn initialize(
         ctx: Context<Initialize>,
-        // verifier: Pubkey,
         denomination: u64,
         merkle_tree_height: u8
     ) -> Result<()> {
         let state = &mut ctx.accounts.state;
-        // state.verifier = verifier;
         state.denomination = denomination;
         state.merkle_tree = MerkleTree::new(merkle_tree_height).to_string();
         state.commitments = String::new();
@@ -26,8 +24,9 @@ pub mod stealth_cash {
 
     pub fn deposit(
         ctx: Context<Deposit>,
-        _commitment: String // Uin256
+        _commitment: String // Uint256
     ) -> Result<DepositEvent> {
+        msg!("Depositing");
         let serialized_state = &ctx.accounts.state;
         let mut state = serialized_state.deserialize();
 
@@ -123,21 +122,26 @@ fn process_withdraw(_recipient: &Pubkey, _relayer: &Pubkey, _fee: f64, _refund: 
 #[derive(Accounts)]
 pub struct Initialize<'info> {
     #[account(mut)]
-    state: Account<'info, State>
+    pub payer: Signer<'info>,
+    
+    #[account(init, space = 1024, payer = payer)]
+    pub state: Account<'info, State>,
+    
+    pub system_program: Program<'info, System>
 }
 
 #[derive(Accounts)]
 pub struct Deposit<'info> {
     #[account(mut)]
-    state: Account<'info, State>,
+    pub state: Account<'info, State>,
     
     /// CHECK: This is not dangerous because we don't read or write from this account
     #[account(mut, signer)]
-    sender: AccountInfo<'info>,
+    pub sender: AccountInfo<'info>,
 
     /// CHECK: This is not dangerous because we don't read or write from this account
     #[account(mut)]
-    recipient: AccountInfo<'info>,
+    pub recipient: AccountInfo<'info>,
 
     system_program: SystemAccount<'info>
 }
@@ -145,11 +149,11 @@ pub struct Deposit<'info> {
 #[derive(Accounts)]
 pub struct Withdraw<'info> {
     #[account(mut)]
-    state: Account<'info, State>,
+    pub state: Account<'info, State>,
 
     /// CHECK: This is not dangerous because we don't read or write from this account
     #[account(signer)]
-    authority: AccountInfo<'info>
+    pub authority: AccountInfo<'info>
 }
 
 /**************
@@ -158,17 +162,17 @@ pub struct Withdraw<'info> {
 
 #[event]
 pub struct DepositEvent {
-    commitment: String,
-    leaf_index: u32,
-    timestamp: i64
+    pub commitment: String,
+    pub leaf_index: u32,
+    pub timestamp: i64
 }
 
 #[event]
 pub struct WithdrawalEvent {
-    to: Pubkey,
-    nullifier_hash: String, //Uint256,
-    relayer: Pubkey,
-    fee: f64
+    pub to: Pubkey,
+    pub nullifier_hash: String, //Uint256,
+    pub relayer: Pubkey,
+    pub fee: f64
 }
 
 /**************
@@ -177,7 +181,6 @@ pub struct WithdrawalEvent {
 
 #[account]
 pub struct State {
-    pub verifier: Pubkey,
     pub denomination: u64,
     pub merkle_tree: String, //MerkleTree,
     pub commitments: String, //HashMap<Uint256, bool>,
@@ -185,7 +188,6 @@ pub struct State {
 }
 
 pub struct DeserializedState {
-    pub verifier: Pubkey,
     pub denomination: u64,
     pub merkle_tree: MerkleTree,
     pub commitments: HashMap<Uint256, bool>,
@@ -195,7 +197,6 @@ pub struct DeserializedState {
 impl State {
     pub fn deserialize(&self) -> DeserializedState {
         DeserializedState {
-            verifier: self.verifier,
             denomination: self.denomination,
             merkle_tree: self.merkle_tree.parse().unwrap(),
             commitments: DeserializedState::deserialize_map(&self.commitments),
