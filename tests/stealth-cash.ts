@@ -60,6 +60,7 @@ const deposit = async () => {
 };
 
 describe("stealth-cash", () => {
+
     it("Testing keypairs", async () => {
         const stateAccountKeypair = await generateStateAccount(connection, "wallets/state.json", developerKeypair);
         assert(!!developerKeypair, "Developer keypair is missing");
@@ -78,11 +79,11 @@ describe("stealth-cash", () => {
         assert(true);
     });
 
-    // it("Testing deposit", async () => {
-    //     const note = await deposit();
-    //     console.log("Note:", note);
-    //     console.log("Past events: ", getPastEvents());
-    //     assert(note.length > 50, "could not return note");
-    // });
+    it("Testing deposit", async () => {
+        const note = await deposit();
+        console.log("Note:", note);
+        console.log("Past events: ", getPastEvents());
+        assert(note.length > 50, "could not return note");
+    });
 
 });

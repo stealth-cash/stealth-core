@@ -3,7 +3,10 @@ use anchor_lang::prelude::*;
 
 declare_id!("GZFcqq4j4ptgHMVnFk8t4hDxCRS5Rrt1aNCBNj4hX3Lt");
 
-use stealth_lib::{merkle_tree::MerkleTree, uint256::Uint256, utils::*};
+use stealth_lib::{merkle_tree::MerkleTree, uint256::Uint256};
+
+pub mod helpers;
+use helpers::{anchor_err, pubkey_to_u128};
 
 #[program]
 pub mod stealth_cash {
@@ -40,7 +43,7 @@ pub mod stealth_cash {
         let commitment = Uint256::from_string(&_commitment);
 
         if deserialized_state.commitments.get(&commitment).is_some() {
-            return Err(err("Commitment is submitted").into());
+            return Err(anchor_err("Commitment is submitted").into());
         }
 
         let leaf_index = deserialized_state.merkle_tree.insert(commitment.clone()).unwrap() as u32;
@@ -82,15 +85,15 @@ pub mod stealth_cash {
         let root = Uint256::from_string(&_root);
 
         if _fee > state.denomination as f64 {
-            return Err(err("Fee exceeds denomination").into());
+            return Err(anchor_err("Fee exceeds denomination").into());
         }
 
         if state.nullifier_hashes.get(&nullifier_hash).is_some() {
-            return Err(err("The note has already been spent").into());
+            return Err(anchor_err("The note has already been spent").into());
         }
 
         if !state.merkle_tree.is_known_root(root.clone()) {
-            return Err(err("Could not find merkle root").into());
+            return Err(anchor_err("Could not find merkle root").into());
         }
     
         let tuple: (Uint256, Uint256, u128, u128, f64, f64) = (
@@ -102,7 +105,7 @@ pub mod stealth_cash {
             _refund
         );
         if !verify_proof(proof, tuple) {
-            return Err(err("Invalid withdraw proof").into());
+            return Err(anchor_err("Invalid withdraw proof").into());
         }
 
         state.nullifier_hashes.insert(nullifier_hash.clone(), true);
@@ -138,7 +141,7 @@ pub struct Initialize<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
     
-    #[account(init, space = 10000, payer = payer)]
+    #[account(init_if_needed, space = 10000, payer = payer)]
     pub state: Account<'info, State>,
     
     pub system_program: Program<'info, System>
@@ -238,12 +241,14 @@ impl DeserializedState {
     }
 
     pub fn deserialize_map(serialized_map: &str) -> HashMap<Uint256, bool> {
-        let bytes = serialized_map.as_bytes();
-        if let Ok(map) = HashMap::try_from_slice(&bytes) {
-            map
-        } else {
-            HashMap::new()
+        let mut map = HashMap::new();
+        for pair in serialized_map.split(';') {
+            let mut split = pair.split(':');
+            let key = Uint256::from_string(&split.next().unwrap().to_string());
+            let value = split.next().unwrap().parse().unwrap();
+            map.insert(key, value);
         }
+        map
     }
 }
 
