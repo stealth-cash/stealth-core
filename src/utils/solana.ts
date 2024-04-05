@@ -1,7 +1,7 @@
 import fs from "fs";
 import { web3 } from "@coral-xyz/anchor";
 
-export type Net = "devnet" | "testnet" | "mainnet";
+export type Net = "localnet" | "devnet" | "testnet" | "mainnet";
 
 export const lamportsToSol = (lamports: number) => lamports / web3.LAMPORTS_PER_SOL;
 export const solToLamports = (sols: number) => web3.LAMPORTS_PER_SOL * sols;
