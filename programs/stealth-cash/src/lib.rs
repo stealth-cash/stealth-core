@@ -15,10 +15,17 @@ pub mod stealth_cash {
         merkle_tree_height: u8
     ) -> Result<()> {
         let state = &mut ctx.accounts.state;
-        state.denomination = denomination;
-        state.merkle_tree = MerkleTree::new(merkle_tree_height).to_string();
-        state.commitments = String::new();
-        state.nullifier_hashes = String::new();
+        let deserialized = DeserializedState {
+            denomination,
+            merkle_tree: MerkleTree::new(merkle_tree_height),
+            commitments: HashMap::new(),
+            nullifier_hashes: HashMap::new()
+        };
+        let serialized = deserialized.serialize();
+        state.denomination = serialized.denomination;
+        state.merkle_tree = serialized.merkle_tree;
+        state.commitments = serialized.commitments;
+        state.nullifier_hashes = serialized.nullifier_hashes;
         Ok(())
     }
 
@@ -27,18 +34,24 @@ pub mod stealth_cash {
         _commitment: String // Uint256
     ) -> Result<DepositEvent> {
         msg!("Depositing");
-        let serialized_state = &ctx.accounts.state;
-        let mut state = serialized_state.deserialize();
+        let state = &mut ctx.accounts.state;
+        let mut deserialized_state = state.deserialize();
 
         let commitment = Uint256::from_string(&_commitment);
 
-        if state.commitments.get(&commitment).is_some() {
+        if deserialized_state.commitments.get(&commitment).is_some() {
             return Err(err("Commitment is submitted").into());
         }
 
-        let leaf_index = state.merkle_tree.insert(commitment.clone()).unwrap() as u32;
+        let leaf_index = deserialized_state.merkle_tree.insert(commitment.clone()).unwrap() as u32;
         let timestamp: i64 = Clock::get().unwrap().unix_timestamp;
-        state.nullifier_hashes.insert(commitment.clone(), true);
+        deserialized_state.nullifier_hashes.insert(commitment.clone(), true);
+
+        let serialized = deserialized_state.serialize();
+        state.commitments = serialized.commitments;
+        state.denomination = serialized.denomination;
+        state.merkle_tree = serialized.merkle_tree;
+        state.nullifier_hashes = serialized.nullifier_hashes;
 
         let deposit_event = DepositEvent {
             commitment: commitment.to_string(), // TODO
@@ -121,10 +134,11 @@ fn process_withdraw(_recipient: &Pubkey, _relayer: &Pubkey, _fee: f64, _refund: 
 
 #[derive(Accounts)]
 pub struct Initialize<'info> {
+    // The account paying to create the counter account
     #[account(mut)]
     pub payer: Signer<'info>,
     
-    #[account(init, space = 1024, payer = payer)]
+    #[account(init, space = 10000, payer = payer)]
     pub state: Account<'info, State>,
     
     pub system_program: Program<'info, System>
@@ -136,14 +150,14 @@ pub struct Deposit<'info> {
     pub state: Account<'info, State>,
     
     /// CHECK: This is not dangerous because we don't read or write from this account
-    #[account(mut, signer)]
+    #[account(mut)]
     pub sender: AccountInfo<'info>,
 
     /// CHECK: This is not dangerous because we don't read or write from this account
     #[account(mut)]
     pub recipient: AccountInfo<'info>,
 
-    system_program: SystemAccount<'info>
+    pub system_program: Program<'info, System>
 }
 
 #[derive(Accounts)]
@@ -206,7 +220,24 @@ impl State {
 }
 
 impl DeserializedState {
-    fn deserialize_map(serialized_map: &str) -> HashMap<Uint256, bool> {
+    pub fn serialize(&self) -> State {
+        State {
+            denomination: self.denomination,
+            merkle_tree: self.merkle_tree.to_string(),
+            commitments: DeserializedState::serialize_map(&self.commitments),
+            nullifier_hashes: DeserializedState::serialize_map(&self.nullifier_hashes)
+        }
+    }
+
+    fn serialize_map(map: &HashMap<Uint256, bool>) -> String {
+        let mut result = String::new();
+        for (key, value) in map {
+            result.push_str(&format!("{}:{};", key.to_string(), value));
+        }
+        result
+    }
+
+    pub fn deserialize_map(serialized_map: &str) -> HashMap<Uint256, bool> {
         let bytes = serialized_map.as_bytes();
         if let Ok(map) = HashMap::try_from_slice(&bytes) {
             map

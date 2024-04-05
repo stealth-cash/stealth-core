@@ -1,18 +1,45 @@
 [toolchain]
+# No specific configurations in this section
 
 [features]
+# Feature toggles
 seeds = false
 skip-lint = false
 
-[programs.devnet]
+[programs.localnet]
+# Custom programs for the localnet cluster
 stealth_cash = "GZFcqq4j4ptgHMVnFk8t4hDxCRS5Rrt1aNCBNj4hX3Lt"
 
 [registry]
-url = "https://api.devnet.solana.com"
+# URL of the Solana cluster's RPC endpoint
+url = "http://127.0.0.1:8899"  # Assuming localnet runs on default port 8899
 
 [provider]
-cluster = "Devnet"
-wallet = "/home/ilia/Desktop/stealth-cash/wallets/w1.json"
+# Provider configurations
+cluster = "Localnet"  # Target Solana cluster
+wallet = "/home/ilia/Desktop/stealth-cash/wallets/w1.json"  # Path to the wallet file
 
 [scripts]
-test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
+# Custom scripts
+test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"  # Test script
+
+
+
+# [toolchain]
+
+# [features]
+# seeds = false
+# skip-lint = false
+
+# [programs.devnet]
+# stealth_cash = "GZFcqq4j4ptgHMVnFk8t4hDxCRS5Rrt1aNCBNj4hX3Lt"
+
+# [registry]
+# url = "https://api.devnet.solana.com"
+
+# [provider]
+# cluster = "Devnet"
+# wallet = "/home/ilia/Desktop/stealth-cash/wallets/w1.json"
+
+# [scripts]
+# test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
