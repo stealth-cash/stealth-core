@@ -1646,9 +1646,9 @@ dependencies = [
 
 [[package]]
 name = "stealth-lib"
-version = "0.1.1"
+version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3cb09d41082c4ea31d1df29323176dd97e690fb90882db88605c0d97f5f48967"
+checksum = "41e3872812d095da1c22636203957e5e38e6ee02d7ec3d8af90574d7a5659869"
 dependencies = [
  "borsh 1.4.0",
  "hex",
@@ -1657,9 +1657,9 @@ dependencies = [
 
 [[package]]
 name = "subtle"
-version = "2.5.0"
+version = "2.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "81cdd64d312baedb58e21336b31bc043b77e01cc99033ce76ef539f78e965ebc"
+checksum = "6bdef32e8150c2a081110b42772ffe7d7c9032b606bc226c8260fd97e0976601"
 
 [[package]]
 name = "syn"

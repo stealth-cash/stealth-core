@@ -19,4 +19,4 @@ default = []
 anchor-lang = { version = "0.29.0", features = ["init-if-needed"]}
 primitive-types = "0.12.1"
 hex = "0.4.3"
-stealth-lib = "0.1.1"
+stealth-lib = "0.1.4"

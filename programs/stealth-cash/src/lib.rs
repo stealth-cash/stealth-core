@@ -1,9 +1,10 @@
 use std::collections::HashMap;
 use anchor_lang::prelude::*;
+use std::str::FromStr;
 
 declare_id!("GZFcqq4j4ptgHMVnFk8t4hDxCRS5Rrt1aNCBNj4hX3Lt");
 
-use stealth_lib::{merkle_tree::MerkleTree, uint256::Uint256};
+use stealth_lib::merkle_tree::MerkleTree;
 
 pub mod helpers;
 use helpers::{anchor_err, pubkey_to_u128};
@@ -34,19 +35,17 @@ pub mod stealth_cash {
 
     pub fn deposit(
         ctx: Context<Deposit>,
-        _commitment: String // Uint256
+        commitment: String
     ) -> Result<DepositEvent> {
         msg!("Depositing");
         let state = &mut ctx.accounts.state;
         let mut deserialized_state = state.deserialize();
 
-        let commitment = Uint256::from_string(&_commitment);
-
         if deserialized_state.commitments.get(&commitment).is_some() {
             return Err(anchor_err("Commitment is submitted").into());
         }
 
-        let leaf_index = deserialized_state.merkle_tree.insert(commitment.clone()).unwrap() as u32;
+        let leaf_index = deserialized_state.merkle_tree.insert(u128::from_str(commitment.as_str()).unwrap()).unwrap() as u32;
         let timestamp: i64 = Clock::get().unwrap().unix_timestamp;
         deserialized_state.nullifier_hashes.insert(commitment.clone(), true);
 
@@ -57,7 +56,7 @@ pub mod stealth_cash {
         state.nullifier_hashes = serialized.nullifier_hashes;
 
         let deposit_event = DepositEvent {
-            commitment: commitment.to_string(), // TODO
+            commitment,
             leaf_index,
             timestamp
         };
@@ -69,9 +68,9 @@ pub mod stealth_cash {
 
     pub fn withdraw(
         ctx: Context<Withdraw>,
-        _proof: String, // Uint256
-        _root: String, // Uint256
-        _nullifier_hash: String, // Uint256
+        _proof: String, // u128
+        _root: String, // u128
+        nullifier_hash: String, // u128
         _recipient: Pubkey,
         _relayer: Pubkey,
         _fee: f64,
@@ -80,9 +79,8 @@ pub mod stealth_cash {
         let serialized_state = &mut ctx.accounts.state;
         let mut state = serialized_state.deserialize();
 
-        let proof = Uint256::from_string(&_proof);
-        let nullifier_hash = Uint256::from_string(&_nullifier_hash);
-        let root = Uint256::from_string(&_root);
+        let proof = u128::from_str(&_proof).unwrap();
+        let root = u128::from_str(&_root).unwrap();
 
         if _fee > state.denomination as f64 {
             return Err(anchor_err("Fee exceeds denomination").into());
@@ -96,9 +94,9 @@ pub mod stealth_cash {
             return Err(anchor_err("Could not find merkle root").into());
         }
     
-        let tuple: (Uint256, Uint256, u128, u128, f64, f64) = (
+        let tuple: (u128, String, u128, u128, f64, f64) = (
             root, 
-            nullifier_hash, 
+            nullifier_hash.clone(),
             pubkey_to_u128(&_recipient), 
             pubkey_to_u128(&_relayer),
             _fee,
@@ -113,7 +111,7 @@ pub mod stealth_cash {
 
         let withdrawal_event = WithdrawalEvent {
             to: _recipient,
-            nullifier_hash: _nullifier_hash.to_string(), // TODO
+            nullifier_hash,
             relayer: _relayer,
             fee: _fee
         };
@@ -187,7 +185,7 @@ pub struct DepositEvent {
 #[event]
 pub struct WithdrawalEvent {
     pub to: Pubkey,
-    pub nullifier_hash: String, //Uint256,
+    pub nullifier_hash: String, //u128,
     pub relayer: Pubkey,
     pub fee: f64
 }
@@ -200,15 +198,15 @@ pub struct WithdrawalEvent {
 pub struct State {
     pub denomination: u64,
     pub merkle_tree: String, //MerkleTree,
-    pub commitments: String, //HashMap<Uint256, bool>,
-    pub nullifier_hashes: String //HashMap<Uint256, bool>
+    pub commitments: String, //HashMap<u128, bool>,
+    pub nullifier_hashes: String //HashMap<u128, bool>
 }
 
 pub struct DeserializedState {
     pub denomination: u64,
     pub merkle_tree: MerkleTree,
-    pub commitments: HashMap<Uint256, bool>,
-    pub nullifier_hashes: HashMap<Uint256, bool>
+    pub commitments: HashMap<String, bool>,
+    pub nullifier_hashes: HashMap<String, bool>
 }
 
 impl State {
@@ -232,7 +230,7 @@ impl DeserializedState {
         }
     }
 
-    fn serialize_map(map: &HashMap<Uint256, bool>) -> String {
+    fn serialize_map(map: &HashMap<String, bool>) -> String {
         let mut result = String::new();
         for (key, value) in map {
             result.push_str(&format!("{}:{};", key.to_string(), value));
@@ -240,11 +238,11 @@ impl DeserializedState {
         result
     }
 
-    pub fn deserialize_map(serialized_map: &str) -> HashMap<Uint256, bool> {
-        let mut map = HashMap::new();
+    pub fn deserialize_map(serialized_map: &str) -> HashMap<String, bool> {
+        let mut map = HashMap::<String, bool>::new();
         for pair in serialized_map.split(';') {
             let mut split = pair.split(':');
-            let key = Uint256::from_string(&split.next().unwrap().to_string());
+            let key = split.next().unwrap().to_string();
             let value = split.next().unwrap().parse().unwrap();
             map.insert(key, value);
         }
@@ -252,6 +250,6 @@ impl DeserializedState {
     }
 }
 
-fn verify_proof(_proof: Uint256, _input: (Uint256, Uint256, u128, u128, f64, f64)) -> bool {
+fn verify_proof(_proof: u128, _input: (u128, String, u128, u128, f64, f64)) -> bool {
     true
 }
